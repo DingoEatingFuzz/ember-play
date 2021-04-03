@@ -3,115 +3,52 @@
 const { chromium } = require('playwright');
 const queryString = require('query-string');
 
-class QUnitAdapter {
-  getHandle = () => window.QUnit;
-  setup = () => {
-    window.emitTestMessage = (type, ...args) => {
-      console.log('$$EMIT$$', type, ...args);
-    };
-  };
-  getQueue = qunit => qunit.config.queue;
-  bindReporter = qunit => {
-    const socket = window.LiveReload.connector.socket;
-    const pub = args => {
-      socket.send(JSON.stringify({ testrunner: true, args }));
-    };
-
-    qunit.on('runStart', ev => {
-      window.emitTestMessage('start', 'Starting test suite...');
-      pub(ev);
+class CoPromise {
+  constructor() {
+    this.promise = new Promise((resolve, reject) => {
+      this.resolve = resolve;
+      this.reject = reject;
     });
-
-    qunit.on('suiteStart', ev => {
-      window.emitTestMessage('suite', ev.fullName.join(' > '), ev);
-      pub(ev);
-    });
-
-    qunit.on('testEnd', ev => {
-      const prefix = {
-        passed: '✓',
-        failed: '✗',
-        skipped: ' SKIPPED: ',
-        todo: ' TODO: ',
-      }[ev.status];
-
-      const indent = 2 + ev.fullName.length;
-      window.emitTestMessage('test', ev.status, `${' '.repeat(indent)}${prefix} ${ev.name}`, ev);
-      pub(ev);
-    });
-  };
-  run = qunit => {
-    qunit.start();
-    return new Promise(resolve => {
-      qunit.on('runEnd', resolve);
-    });
-  };
+  }
 }
-
-const adapterForFramework = framework => {
-  const mapping = {
-    qunit: QUnitAdapter,
-  };
-
-  return mapping[framework];
-};
 
 class Runner {
   constructor({ host, framework, ui }) {
     this.host = host;
     this.framework = framework;
     this.ui = ui;
-
-    const Adapter = adapterForFramework(this.framework);
-    if (!Adapter) {
-      ui.writeError(`No adapter found for framework ${this.framework}`);
-    } else {
-      this.adapter = new Adapter();
-    }
   }
 
   async run(filter) {
-    if (!this.adapter) return;
-
-    const { ui, adapter } = this;
-    const params = { __newrunner: true };
+    const ui = this.ui;
+    const params = { __emberplay: true };
     if (filter) {
       params.filter = filter;
     }
 
     ui.writeLine('Launching Chrome...');
-    const browser = await chromium.launch({});
+    const browser = await chromium.launch({ headless: true });
 
     const url = `${appendPath(this.host, 'tests')}?${queryString.stringify(params)}`;
     ui.writeLine(`Opening ${url}...`);
     const page = await browser.newPage();
 
-    // Listen to page console to report test status
-    const cdpClient = await page.context().newCDPSession(page);
-    cdpClient.send('Runtime.enable');
-    cdpClient.on('Runtime.consoleAPICalled', entry => {
-      if (isValidMessage(entry)) {
-        this.print(entry.args.slice(1).map(a => a && a.value));
-      }
-    });
+    const WaitForRunner = new CoPromise();
     page.on('websocket', ws => {
       console.log('Opened a connection:', ws.url());
       ws.on('framesent', e => {
         const payload = JSON.parse(e.payload);
-        if (payload.testrunner) {
-          console.log(payload.args);
+        if (payload.emberplay) {
+          console.log(payload.type, payload.event);
+          if (payload.type === 'runEnd') {
+            WaitForRunner.resolve();
+          }
         }
       });
     });
 
     await page.goto(url);
-
-    // Capture a handle to the reporter object
-    const reporterHandle = await page.evaluateHandle(adapter.getHandle);
-    await reporterHandle.evaluate(adapter.setup);
-    await reporterHandle.evaluate(adapter.bindReporter);
-
-    await reporterHandle.evaluate(adapter.run);
+    await WaitForRunner.promise;
   }
 
   print([type, ...args]) {
