@@ -20,6 +20,7 @@ module.exports = {
         ],
 
         async run({ filter }) {
+          this.ui.writeLine("Ember Play starting...");
           const env = this.project.config(this.environment);
           const framework = determineTestFramework(this.project);
           if (!framework) {
