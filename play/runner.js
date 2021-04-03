@@ -2,6 +2,42 @@
 
 const { chromium } = require('playwright');
 const queryString = require('query-string');
+const EventEmitter = require('events');
+
+class TestRunner extends EventEmitter {
+  constructor(token) {
+    super();
+    this.token = token || true;
+  }
+
+  send(ev) {
+    const payload = JSON.parse(ev.payload);
+    if (payload.emberplay === this.token) {
+      this.emit(payload.type, payload.event);
+    }
+  }
+}
+
+class Reporter {
+  constructor(runner, ui) {
+    runner.on('suiteStart', ev => {
+      ui.writeLine('');
+      ui.writeLine(ev.fullName.join(' > '));
+    });
+
+    runner.on('testEnd', ev => {
+      const prefix = {
+        passed: '✓',
+        failed: '✗',
+        skipped: ' SKIPPED: ',
+        todo: ' TODO: ',
+      }[ev.status];
+
+      const indent = 2 + ev.fullName.length;
+      ui.writeLine(`${' '.repeat(indent)}${prefix} ${ev.name}`);
+    });
+  }
+}
 
 class CoPromise {
   constructor() {
@@ -34,45 +70,19 @@ class Runner {
     const page = await browser.newPage();
 
     const WaitForRunner = new CoPromise();
+    const runner = new TestRunner();
+    const reporter = new Reporter(runner, ui);
+    runner.on('runEnd', () => WaitForRunner.resolve());
+
     page.on('websocket', ws => {
-      console.log('Opened a connection:', ws.url());
       ws.on('framesent', e => {
-        const payload = JSON.parse(e.payload);
-        if (payload.emberplay) {
-          console.log(payload.type, payload.event);
-          if (payload.type === 'runEnd') {
-            WaitForRunner.resolve();
-          }
-        }
+        runner.send(e);
       });
     });
 
     await page.goto(url);
     await WaitForRunner.promise;
   }
-
-  print([type, ...args]) {
-    const ui = this.ui;
-
-    if (['start', 'end'].includes(type)) {
-      ui.writeLine(args[0]);
-    } else if (type === 'suite') {
-      ui.writeLine('');
-      ui.writeLine(args[0]);
-    } else if (type === 'test') {
-      const level = {
-        failed: 'ERROR',
-        skipped: 'DEBUG',
-        todo: 'WARNING',
-      }[args[0]];
-
-      ui.writeLine(args[1], level);
-    }
-  }
-}
-
-function isValidMessage(entry) {
-  return entry.type === 'log' && entry.args[0] && entry.args[0].value === '$$EMIT$$';
 }
 
 function appendPath(base, path) {
