@@ -1,47 +1,22 @@
-class WebSocketReporter {
-  constructor(runner, socket, options = {}) {
-    // Socket can be a reference to a web socket or an address to make a web socket from
-    // e.g., ws://localhost:1111
-    if (socket instanceof window.WebSocket) {
-      this.socket = socket;
-    } else {
-      this.socket = new window.WebSocket(socket);
-    }
-
-    // Optionally set a token to verify events on the receiving end
-    const token = options.token || true;
-
-    console.log('EMBER PLAY: runner', runner);
-
-    // Pipe all event data as is through the web socket
-    const events = ['runStart', 'runEnd', 'suiteStart', 'suiteEnd', 'testStart', 'testEnd'];
-    for (const ev of events) {
-      console.log('EMBER PLAY: registering', ev);
-      runner.on(ev, d => console.log('yep', ev, d) || this.socket.send(JSON.stringify({
-        emberplay: token,
-        type: ev,
-        event: d,
-      })));
-    }
-  }
-
-  static init(runner, socket) {
-    return new WebSocketReporter(runner, socket);
-  }
-}
-
-class QUnitAdapter {
-
-}
+import QUnitAdapter from './qunit';
+import WebSocketReporter from './web-socket-reporter';
 
 export default function setup() {
   // Don't do anything unless ember play has been opted into.
   const enabled = /[?&]__emberplay/.test(window.location.search);
-  console.log('EMBER PLAY: enabled?', enabled);
   if (!enabled) return;
 
-  // Discover the test runner (QUnit, Mocha, Jasmine, or anything js-reporters supports)
-  const runner = autoRegister();
+  // Discover the test runner
+  let runner;
+  if (window.QUnit) {
+    runner = new QUnitAdapter(QUnit);
+  } else if (window.mocha) {
+    // TODO: Make a Mocha adapter
+  }
+
+  if (!runner) {
+    console.warn('Could not discover a test runner. Ember Play has aborted');
+  }
 
   // Use the existing live reload socket to sink test output to
   const socket = window.LiveReload.connector.socket;
