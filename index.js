@@ -1,5 +1,60 @@
 'use strict';
+const Runner = require('./play/runner.js');
 
 module.exports = {
   name: require('./package').name,
+
+  isDevelopingAddon() {
+    return true;
+  },
+
+  includedCommands() {
+    return {
+      play: {
+        name: 'play',
+        works: 'insideProject',
+        description:
+          'Run tests faster by relaying the output from the /tests route to stdout',
+        availableOptions: [
+          { name: 'filter', type: String, default: false, aliases: ['f'] },
+        ],
+
+        async run({ filter }) {
+          const env = this.project.config(this.environment);
+          const framework = determineTestFramework(this.project);
+          if (!framework) {
+            this.ui.writeError(
+              'Could not determine your test framework! Are you not using QUnit or Mocha?'
+            );
+            return;
+          }
+
+          // TODO: Figure out the proper way to build this URL
+          const port = process.env.port || 4200;
+          const host = `http://localhost:${port}`;
+
+          const runner = new Runner({
+            framework,
+            host: host + env.rootURL,
+            ui: this.ui,
+          });
+
+          await runner.run(filter);
+        },
+      },
+    };
+  },
 };
+
+function determineTestFramework(project) {
+  const frameworks = [
+    { name: 'qunit', pkg: 'ember-qunit' },
+    { name: 'mocha', pkg: 'ember-mocha' },
+  ];
+
+  for (const framework of frameworks) {
+    if (project.findAddonByName(framework.pkg)) return framework.name;
+  }
+
+  return null;
+}
