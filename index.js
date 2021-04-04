@@ -40,6 +40,11 @@ module.exports = {
             ui: this.ui,
           });
 
+          process.on('SIGINT', () => {
+            this.ui.writeLine('');
+            this.ui.writeWarnLine('SIGINT, Exiting early');
+          });
+
           await play.run(filter);
         },
       },
