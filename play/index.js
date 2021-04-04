@@ -35,6 +35,7 @@ class Play {
     ui.writeLine(`Opening ${url}...`);
     const page = await browser.newPage();
 
+    ui.writeLine('');
     const WaitForRunner = new CoPromise();
     const runner = new Runner();
     const reporter = new Reporter(runner, ui);
