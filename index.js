@@ -1,5 +1,5 @@
 'use strict';
-const Runner = require('./play/runner.js');
+const Play = require('./play');
 
 module.exports = {
   name: require('./package').name,
@@ -34,13 +34,13 @@ module.exports = {
           const port = process.env.port || 4200;
           const host = `http://localhost:${port}`;
 
-          const runner = new Runner({
+          const play = new Play({
             framework,
             host: host + env.rootURL,
             ui: this.ui,
           });
 
-          await runner.run(filter);
+          await play.run(filter);
         },
       },
     };
