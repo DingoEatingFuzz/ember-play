@@ -1,7 +1,43 @@
 const chalk = require('chalk');
 
+class Spinner {
+  constructor(ui, colorfn) {
+    const passthrough = k => k;
+    this.ui = ui;
+    this.colorfn = colorfn || passthrough;
+    this.frames = "_ _ _ - ` ` ' ´ - _ _ _".split(' ');
+    this.frame = 0;
+
+    process.on('SIGINT', () => {
+      this.stop();
+    });
+  }
+
+  spinner() {
+    this.frame = (this.frame + 1) % this.frames.length;
+    return this.colorfn(this.frames[this.frame]);
+  }
+
+  start(msg, prefix = '') {
+    this.ui.write(prefix + this.spinner() + ' ' + msg);
+    this.interval = setInterval(() => {
+      resetLine();
+      this.ui.write(prefix + this.spinner() + ' ' + msg);
+    }, 70);
+  }
+
+  stop() {
+    if (this.interval) {
+      clearInterval(this.interval);
+      resetLine();
+    }
+    this.frame = 0;
+  }
+}
+
 class Reporter {
   constructor(runner, ui) {
+    this.spinner = new Spinner(ui, chalk.yellow);
 
     // Run Events
 
@@ -43,12 +79,19 @@ class Reporter {
 
     // Test Events
 
+    runner.on('testStart', ev => {
+      const indent = ev.fullName.length;
+      this.spinner.start(chalk.gray(ev.name), space(indent));
+    });
+
     runner.on('testEnd', ev => {
+      this.spinner.stop();
+
       const prefix = {
         passed: '✓',
         failed: '✗',
-        skipped: ' SKIPPED: ',
-        todo: ' TODO: ',
+        skipped: 'SKIPPED:',
+        todo: 'TODO:',
       }[ev.status];
       const color = {
         passed: chalk.green,
@@ -107,6 +150,13 @@ function humanDuration(duration) {
   if (m) return `${m}m ${fs}s ${fms}ms`;
   else if (s) return `${fs}s ${fms}ms`;
   return `${ms}ms`;
+}
+
+function resetLine() {
+  if (process.stdout.isTTY) {
+    process.stdout.clearLine();
+    process.stdout.cursorTo(0);
+  }
 }
 
 module.exports = Reporter;
