@@ -73,7 +73,7 @@ class Reporter {
     runner.on('suiteStart', ev => {
       ui.writeLine('');
 
-      const indent = ev.fullName.length - 1;
+      const indent = Math.max(0, ev.fullName.length - 1);
       ui.writeLine(`${space(indent)}${ev.name}`);
     });
 
