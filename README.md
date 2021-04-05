@@ -64,6 +64,13 @@ Acceptance | jobs list
 2. Your tests route uses the [Common Reporters Interface](https://github.com/js-reporters/js-reporters) to send all test output over the Live Reload websocket.
 3. Playwright intercepts this websocket traffic and reports test output to your CLI.
 
+## Troubleshooting
+
+**Nothing runs**
+
+If this happens it's probably because you aren't building tests in the dev environment. Tests will build in dev by default, but sometimes this is disabled
+to speed up dev builds. Check your `ember-cli-build.js` file to make sure `tests` is set to `true` (or at least not set to `false`) in the `EmberApp` constructor.
+
 ## Contributing
 
 See the [Contributing](CONTRIBUTING.md) guide for details.
