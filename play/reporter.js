@@ -122,7 +122,7 @@ class Reporter {
             console.log(assertion.expected);
             ui.writeLine('');
             ui.writeLine(chalk.white('Actual:'));
-            console.log(assertion.expected);
+            console.log(assertion.actual);
             ui.writeLine('');
             ui.writeLine(chalk.white('Stack:'));
             console.log(assertion.stack);
