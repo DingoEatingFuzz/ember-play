@@ -3,6 +3,7 @@
 const { chromium } = require('playwright');
 const chalk = require('chalk');
 const queryString = require('query-string');
+const open = require('open');
 const Runner = require('./runner');
 const Reporter = require('./reporter');
 const { resetLine } = require('./utils');
@@ -25,15 +26,24 @@ class Play {
     this.ui = ui;
     this.watch = watch;
     this.filter = filter;
+
+    this.testsPath = appendPath(this.host, 'tests');
+  }
+
+  buildURL(...params) {
+    const allParams = Object.assign(...params);
+    Object.keys(allParams).forEach(key => {
+      if (allParams[key] == null) {
+        delete allParams[key];
+      }
+    });
+
+    return `${this.testsPath}?${queryString.stringify(allParams)}`;
   }
 
   async run() {
     const ui = this.ui;
-    const params = { __emberplay: true };
-    if (this.filter) {
-      params.filter = this.filter;
-    }
-    const url = `${appendPath(this.host, 'tests')}?${queryString.stringify(params)}`;
+    const url = this.buildURL({ __emberplay: true, filter: this.filter });
 
     ui.writeLine('Launching Chrome...');
     const browser = await chromium.launch({ headless: true });
@@ -80,6 +90,12 @@ class Play {
 
     await page.goto(url);
     await WaitForRunner.promise;
+  }
+
+  async open() {
+    const url = this.buildURL({ filter: this.filter });
+    this.ui.writeLine(`Opening ${chalk.bold(url)} in your default browser...`);
+    await open(url);
   }
 }
 

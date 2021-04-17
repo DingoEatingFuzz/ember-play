@@ -18,9 +18,10 @@ module.exports = {
         availableOptions: [
           { name: 'filter', type: String, default: false, aliases: ['f'] },
           { name: 'watch', type: Boolean, default: false, aliases: ['w'] },
+          { name: 'browser', type: Boolean, default: false, aliases: ['b'] },
         ],
 
-        async run({ filter, watch }) {
+        async run({ filter, watch, browser }) {
           this.ui.writeLine("Ember Play starting...");
           const env = this.project.config(this.environment);
           const framework = determineTestFramework(this.project);
@@ -43,7 +44,11 @@ module.exports = {
             watch,
           });
 
-          await play.run();
+          if (browser) {
+            await play.open();
+          } else {
+            await play.run();
+          }
         },
       },
     };
