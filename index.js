@@ -39,10 +39,11 @@ module.exports = {
             framework,
             host: host + env.rootURL,
             ui: this.ui,
+            filter,
             watch,
           });
 
-          await play.run(filter);
+          await play.run();
         },
       },
     };

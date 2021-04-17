@@ -19,18 +19,19 @@ class CoPromise {
 class Play {
   firstRun = true;
 
-  constructor({ host, framework, ui, watch }) {
+  constructor({ host, framework, ui, filter, watch }) {
     this.host = host;
     this.framework = framework;
     this.ui = ui;
     this.watch = watch;
+    this.filter = filter;
   }
 
-  async run(filter) {
+  async run() {
     const ui = this.ui;
     const params = { __emberplay: true };
-    if (filter) {
-      params.filter = filter;
+    if (this.filter) {
+      params.filter = this.filter;
     }
     const url = `${appendPath(this.host, 'tests')}?${queryString.stringify(params)}`;
 
