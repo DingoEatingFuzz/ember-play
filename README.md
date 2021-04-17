@@ -7,7 +7,7 @@ A build-free test runner for Ember apps.
 1. Runs tests from your already running Ember app
 2. Filter tests using the familiar `-f` or `--filter` flag
 3. Watch tests with the `-w` or `--watch` flag
-4. (Soon!) Quickly move to a browser with the `-b` or `--browswer` flag
+4. Quickly move to a browser with the `-b` or `--browswer` flag
 5. (Soon!) Mocha support, with automatic detection
 
 ## Compatibility
