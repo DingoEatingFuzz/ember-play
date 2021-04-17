@@ -1,4 +1,5 @@
 const chalk = require('chalk');
+const { resetLine } = require('./utils');
 
 class Spinner {
   constructor(ui, colorfn) {
@@ -150,13 +151,6 @@ function humanDuration(duration) {
   if (m) return `${m}m ${fs}s ${fms}ms`;
   else if (s) return `${fs}s ${fms}ms`;
   return `${ms}ms`;
-}
-
-function resetLine() {
-  if (process.stdout.isTTY) {
-    process.stdout.clearLine();
-    process.stdout.cursorTo(0);
-  }
 }
 
 module.exports = Reporter;

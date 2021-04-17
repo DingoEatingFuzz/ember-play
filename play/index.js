@@ -1,9 +1,11 @@
 'use strict';
 
 const { chromium } = require('playwright');
+const chalk = require('chalk');
 const queryString = require('query-string');
 const Runner = require('./runner');
 const Reporter = require('./reporter');
+const { resetLine } = require('./utils');
 
 class CoPromise {
   constructor() {
@@ -15,10 +17,13 @@ class CoPromise {
 }
 
 class Play {
-  constructor({ host, framework, ui }) {
+  firstRun = true;
+
+  constructor({ host, framework, ui, watch }) {
     this.host = host;
     this.framework = framework;
     this.ui = ui;
+    this.watch = watch;
   }
 
   async run(filter) {
@@ -39,13 +44,33 @@ class Play {
     const WaitForRunner = new CoPromise();
     const runner = new Runner();
     const reporter = new Reporter(runner, ui);
-    runner.on('runEnd', () => WaitForRunner.resolve());
+
+    runner.on('runEnd', () => {
+      if (this.watch) {
+        ui.writeLine('');
+        ui.write(chalk.yellow('Watching tests. ^C to Quit'));
+      } else {
+        WaitForRunner.resolve();
+      }
+    })
 
     page.on('websocket', ws => {
       ws.on('framesent', e => {
         runner.send(e);
       });
     });
+
+    if (this.watch) {
+      page.on('framenavigated', () => {
+        if (!this.firstRun) {
+          resetLine();
+          ui.writeLine(chalk.yellow('Livereload, restarting tests.'));
+          ui.writeLine('');
+        } else {
+          this.firstRun = false;
+        }
+      });
+    }
 
     await page.goto(url);
     await WaitForRunner.promise;
