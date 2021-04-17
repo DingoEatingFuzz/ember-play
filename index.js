@@ -17,9 +17,10 @@ module.exports = {
           'Run tests faster by relaying the output from the /tests route to stdout',
         availableOptions: [
           { name: 'filter', type: String, default: false, aliases: ['f'] },
+          { name: 'watch', type: Boolean, default: false, aliases: ['w'] },
         ],
 
-        async run({ filter }) {
+        async run({ filter, watch }) {
           this.ui.writeLine("Ember Play starting...");
           const env = this.project.config(this.environment);
           const framework = determineTestFramework(this.project);
@@ -38,11 +39,7 @@ module.exports = {
             framework,
             host: host + env.rootURL,
             ui: this.ui,
-          });
-
-          process.on('SIGINT', () => {
-            this.ui.writeLine('');
-            this.ui.writeWarnLine('SIGINT, Exiting early');
+            watch,
           });
 
           await play.run(filter);
