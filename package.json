@@ -23,7 +23,10 @@
     "start": "ember serve",
     "test": "npm-run-all lint test:*",
     "test:ember": "ember test",
-    "test:ember-compatibility": "ember try:each"
+    "test:ember-compatibility": "ember try:each",
+    "publish:patch": "npm version patch && git push && git push --tags && npm publish",
+    "publish:minor": "npm version minor && git push && git push --tags && npm publish",
+    "publish:major": "npm version major && git push && git push --tags && npm publish"
   },
   "dependencies": {
     "chalk": "^4.1.0",
