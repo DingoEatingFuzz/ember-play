@@ -70,6 +70,11 @@ class Play {
           this.firstRun = false;
         }
       });
+    } else {
+      process.on('SIGINT', () => {
+        this.ui.writeLine('');
+        this.ui.writeWarnLine('SIGINT, Exiting early');
+      });
     }
 
     await page.goto(url);
