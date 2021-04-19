@@ -8,7 +8,9 @@ A build-free test runner for Ember apps.
 2. Filter tests using the familiar `-f` or `--filter` flag
 3. Watch tests with the `-w` or `--watch` flag
 4. Quickly move to a browser with the `-b` or `--browswer` flag
-5. (Soon!) Mocha support, with automatic detection
+6. (Soon!) Set custom query params on the tests page with the `-p` or `--params` flag
+5. (Soon!) Configure static query params for the test page in your `config/environment.js`
+6. (Soon!) Mocha support, with automatic detection
 
 ## Compatibility
 
